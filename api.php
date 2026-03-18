@@ -6,7 +6,7 @@
  */
 header('Content-Type: application/json; charset=utf-8');
 // token，安全验证，使用前请把123456修改成你觉得安全的
-$token = "123456";
+$token = "PtcQpfGA11kveIODet";
 error_reporting(E_ALL);
 
 require_once 'config.inc.php';
@@ -66,9 +66,27 @@ try {
             'password' => ''
         ];
 
-        $db->query($db->insert($table)->rows($insertData));
-        $cid = $db->lastInsertId();
-
+        $cid = $db->query($db->insert($table)->rows($insertData));
+	// ===== 添加以下代码 =====
+		// 处理分类
+		if (!empty($_REQUEST['category'])) {
+			$category = trim($_REQUEST['category']);
+    
+			// 查找分类
+			$termQuery = $db->select('mid')->from($prefix . 'metas')
+				->where('type = ?', 'category')
+				->where('(name = ? OR slug = ?)', $category, $category);
+    
+			$term = $db->fetchRow($termQuery);
+    
+			if ($term) {
+				$db->query($db->insert($prefix . 'relationships')->rows([
+					'cid' => $cid,
+					'mid' => $term['mid']
+				]));
+			}
+		}
+	// ===== 添加结束 =====
         if (!empty($tags)) {
             $tagList = explode(',', $tags);
             foreach ($tagList as $tag) {
